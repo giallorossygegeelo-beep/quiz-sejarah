@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz Sejarah Indonesia</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+    }
+
+    .box {
+      background: rgba(0,0,0,0.75);
+      padding: 30px;
+      border-radius: 20px;
+      width: 520px;
+      text-align: center;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+    }
+
+    button {
+      width: 100%;
+      margin: 10px 0;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    button:hover { opacity: 0.85; }
+
+    .menu-btn { background: white; color: black; }
+    .next-btn { background: #00c6ff; color: white; }
+
+    .options button { background: white; color: black; }
+
+    .hidden { display: none; }
+
+    input[type=range] { width: 100%; }
+
+    #timer {
+      font-size: 18px;
+      margin: 10px 0;
+      color: yellow;
+    }
+
+    .group {
+      font-size: 14px;
+      margin-bottom: 15px;
+      color: #ddd;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SOUNDTRACK -->
+  <audio id="bgMusic" loop>
+    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- SOUND EFFECTS -->
+  <audio id="correctSound">
+    <source src="https://www.myinstants.com/media/sounds/correct.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="wrongSound">
+    <source src="https://www.myinstants.com/media/sounds/wrong-answer-sound-effect.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- MAIN MENU -->
+  <div class="box" id="mainMenu">
+    <h1>🎮 Quiz Sejarah Indonesia</h1>
+
+    <div class="group">
+      <b>Nama Kelompok:</b><br>
+      Rofika Afifatul M. (27)<br>
+      Diardo Brigitta W. (05)<br>
+      M. Irfan Daffa (14)
+    </div>
+
+    <p>Pilih tingkat kesulitan:</p>
+
+    <button class="menu-btn" onclick="startGame('easy')">Mudah</button>
+    <button class="menu-btn" onclick="startGame('medium')">Sedang</button>
+    <button class="menu-btn" onclick="startGame('hard')">Sulit</button>
+
+    <button class="next-btn" onclick="openSettings()">⚙️ Settings</button>
+  </div>
+
+  <!-- SETTINGS MENU -->
+  <div class="box hidden" id="settingsMenu">
+    <h1>⚙️ Pengaturan</h1>
+
+    <p>Volume Musik:</p>
+    <input type="range" min="0" max="1" step="0.1" value="0.5" onchange="setVolume(this.value)">
+
+    <p>Pilih Bahasa:</p>
+    <button class="menu-btn" onclick="setLanguage('id')">Indonesia</button>
+    <button class="menu-btn" onclick="setLanguage('en')">English</button>
+    <button class="menu-btn" onclick="setLanguage('ru')">Русский</button>
+
+    <button class="next-btn" onclick="backToMenu()">⬅ Kembali</button>
+  </div>
+
+  <!-- QUIZ BOX -->
+  <div class="box hidden" id="quizBox">
+    <h1 id="title">📚 Quiz</h1>
+    <p id="timer">⏳ Waktu: 05:00</p>
+    <p id="question">Soal muncul di sini...</p>
+    <div class="options" id="options"></div>
+    <p id="result"></p>
+    <p id="score">Skor: 0</p>
+    <button class="next-btn" onclick="nextQuestion()">Soal Berikutnya</button>
+    <button class="menu-btn" onclick="backHome()">🏠 Kembali ke Menu</button>
+  </div>
+
+  <script>
+    const music = document.getElementById("bgMusic");
+    const correctSound = document.getElementById("correctSound");
+    const wrongSound = document.getElementById("wrongSound");
+
+    music.volume = 0.5;
+
+    let language = "id";
+    let timerInterval;
+    let timeLeft = 300; // 5 minutes
+
+    const texts = {
+      id: { title: "Quiz Sejarah", correct: "✅ Benar!", wrong: "❌ Salah! Jawaban: ", finish: "🎉 Quiz selesai! Skor akhir: " },
+      en: { title: "History Quiz", correct: "✅ Correct!", wrong: "❌ Wrong! Answer: ", finish: "🎉 Quiz finished! Final score: " },
+      ru: { title: "Историческая Викторина", correct: "✅ Верно!", wrong: "❌ Неверно! Ответ: ", finish: "🎉 Викторина окончена! Итоговый счет: " }
+    };
+
+    // 30 QUESTIONS (SAMPLE)
+    function generateQuestions() {
+      return [
+        {id:"Proses interaksi antarindividu dalam masyarakat disebut...",en:"Interaction between individuals is called...",ru:"Взаимодействие между людьми называется...",options:["Adaptasi","Interaksi sosial","Modernisasi","Globalisasi"],answer:"Interaksi sosial"},
+        {id:"Sumber daya alam yang tidak dapat diperbaharui adalah...",en:"Non-renewable natural resource is...",ru:"Невозобновляемый ресурс...",options:["Air","Hutan","Angin","Minyak bumi"],answer:"Minyak bumi"},
+        {id:"Peta yang menunjukkan persebaran penduduk disebut...",en:"Map showing population distribution is...",ru:"Карта распределения населения...",options:["Peta tematik","Peta topografi","Peta dunia","Peta politik"],answer:"Peta tematik"},
+        {id:"Kegiatan ekonomi sektor primer adalah...",en:"Primary sector economic activity is...",ru:"Первичный сектор экономики...",options:["Pertanian","Industri","Perdagangan","Jasa"],answer:"Pertanian"},
+        {id:"Tujuan utama kerja sama ASEAN adalah...",en:"Main goal of ASEAN cooperation is...",ru:"Главная цель АСЕАН...",options:["Perang","Meningkatkan kesejahteraan","Penjajahan","Memisahkan negara"],answer:"Meningkatkan kesejahteraan"},
+        {id:"Sungai terpanjang di Indonesia adalah...",en:"Longest river in Indonesia is...",ru:"Самая длинная река...",options:["Musi","Kapuas","Bengawan Solo","Mahakam"],answer:"Kapuas"},
+        {id:"Masa manusia sebelum mengenal tulisan disebut...",en:"Era before writing is called...",ru:"Эпоха до письменности...",options:["Sejarah","Praaksara","Modern","Kolonial"],answer:"Praaksara"},
+        {id:"Kerajaan Islam pertama di Indonesia adalah...",en:"First Islamic kingdom in Indonesia was...",ru:"Первое исламское королевство...",options:["Demak","Mataram","Majapahit","Samudra Pasai"],answer:"Samudra Pasai"},
+        {id:"Garis yang membatasi flora Indonesia Barat dan Tengah adalah...",en:"Line dividing West and Central flora is...",ru:"Линия раздела флоры...",options:["Wallace","Weber","Khatulistiwa","Meridian"],answer:"Wallace"},
+        {id:"Manusia berburu dan meramu biasanya hidup...",en:"Hunter-gatherers usually lived...",ru:"Охотники-собиратели жили...",options:["Menetap","Berpindah-pindah","Di kota","Di istana"],answer:"Berpindah-pindah"},
+        {id:"Peninggalan masa Megalitikum adalah...",en:"Megalithic relic is...",ru:"Мегалитический памятник...",options:["Candi","Dolmen","Kereta","Istana"],answer:"Dolmen"},
+        {id:"Ciri masa sejarah adalah adanya...",en:"Characteristic of historical era is...",ru:"Признак исторической эпохи...",options:["Api","Tulisan","Kapak","Gua"],answer:"Tulisan"},
+        {id:"Ilmu sejarah mempelajari...",en:"History studies...",ru:"История изучает...",options:["Masa depan","Peristiwa masa lalu","Cuaca","Matematika"],answer:"Peristiwa masa lalu"},
+        {id:"Kerajaan maritim besar di Sumatra adalah...",en:"Great maritime kingdom in Sumatra was...",ru:"Морское королевство на Суматре...",options:["Sriwijaya","Kutai","Tarumanegara","Mataram"],answer:"Sriwijaya"},
+        {id:"Sumpah Pemuda terjadi pada tahun...",en:"Youth Pledge happened in...",ru:"Клятва молодежи произошла в...",options:["1908","1928","1945","1965"],answer:"1928"},
+        {id:"Konferensi Asia Afrika berlangsung di kota...",en:"Asian-African Conference held in...",ru:"Конференция проходила в...",options:["Bandung","Jakarta","Medan","Surabaya"],answer:"Bandung"},
+        {id:"Tokoh Majapahit dengan Sumpah Palapa adalah...",en:"Majapahit figure with Palapa Oath was...",ru:"Клятву Палапа дал...",options:["Gajah Mada","Diponegoro","Kartini","Pattimura"],answer:"Gajah Mada"},
+        {id:"Kegiatan ekonomi sektor tersier adalah...",en:"Tertiary sector activity is...",ru:"Третичный сектор...",options:["Pertanian","Tambang","Jasa","Perkebunan"],answer:"Jasa"},
+        {id:"Indonesia secara geografis adalah negara...",en:"Geographically Indonesia is a...",ru:"Географически Индонезия...",options:["Benua","Kepulauan","Padang pasir","Kutub"],answer:"Kepulauan"},
+        {id:"Tujuan kerja sama antarwilayah adalah...",en:"Purpose of regional cooperation is...",ru:"Цель сотрудничества регионов...",options:["Bersaing","Saling bantu sumber daya","Menjajah","Memisahkan"],answer:"Saling bantu sumber daya"},
+        {id:"Kerajaan Hindu-Buddha terbesar di Jawa adalah...",en:"Largest Hindu-Buddhist kingdom in Java was...",ru:"Крупнейшее королевство на Яве...",options:["Majapahit","Demak","Aceh","Ternate"],answer:"Majapahit"},
+        {id:"Tokoh pahlawan dari Maluku adalah...",en:"Hero from Maluku is...",ru:"Герой с Малуку...",options:["Pattimura","Kartini","Sudirman","Habibie"],answer:"Pattimura"},
+        {id:"Sumber daya alam hayati contohnya...",en:"Biotic natural resource example...",ru:"Биотический ресурс...",options:["Minyak","Emas","Hewan","Batu bara"],answer:"Hewan"},
+        {id:"Garis bujur menghubungkan...",en:"Longitude lines connect...",ru:"Долгота соединяет...",options:["Barat-Timur","Kutub Utara-Selatan","Gunung","Laut"],answer:"Kutub Utara-Selatan"},
+        {id:"Kontak sosial primer contohnya...",en:"Primary social contact example...",ru:"Пример прямого контакта...",options:["SMS","Bertemu langsung","Email","Telepon"],answer:"Bertemu langsung"},
+        {id:"Permintaan efektif bila...",en:"Demand is effective if...",ru:"Спрос эффективен если...",options:["Ada kemampuan membeli","Tidak ada uang","Tidak butuh","Gratis"],answer:"Ada kemampuan membeli"},
+        {id:"Kerajaan Kutai terletak di...",en:"Kutai kingdom located in...",ru:"Королевство Кутай...",options:["Kalimantan","Sumatra","Jawa","Bali"],answer:"Kalimantan"},
+        {id:"Peta topografi menunjukkan...",en:"Topographic map shows...",ru:"Топографическая карта...",options:["Relief permukaan","Cuaca","Politik","Penduduk"],answer:"Relief permukaan"},
+        {id:"Proklamasi kemerdekaan Indonesia dibacakan pada...",en:"Independence proclamation was read on...",ru:"Провозглашение независимости...",options:["17 Agustus 1945","10 November 1945","20 Mei 1908","1 Juni 1945"],answer:"17 Agustus 1945"}
+      ];
+    }
+
+    const quizLevels = {
+      easy: generateQuestions(),
+      medium: generateQuestions(),
+      hard: generateQuestions()
+    };
+
+    let questions = [];
+    let current = 0;
+    let score = 0;
+
+    function startGame(level) {
+      questions = quizLevels[level];
+      current = 0;
+      score = 0;
+      timeLeft = 300;
+
+      document.getElementById("mainMenu").classList.add("hidden");
+      document.getElementById("quizBox").classList.remove("hidden");
+
+      music.play();
+      startTimer();
+      loadQuestion();
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        let minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+        let seconds = String(timeLeft % 60).padStart(2, '0');
+        document.getElementById("timer").textContent = `⏳ Waktu: ${minutes}:${seconds}`;
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          endGame("⏰ Waktu habis!");
+        }
+      }, 1000);
+    }
+
+    function loadQuestion() {
+      document.getElementById("title").textContent = texts[language].title;
+      document.getElementById("result").textContent = "";
+
+      const qData = questions[current];
+      document.getElementById("question").textContent = qData[language];
+
+      const optionsDiv = document.getElementById("options");
+      optionsDiv.innerHTML = "";
+
+      qData.options.forEach(option => {
+        const btn = document.createElement("button");
+        btn.textContent = option;
+        btn.onclick = () => checkAnswer(option);
+        optionsDiv.appendChild(btn);
+      });
+
+      document.getElementById("score").textContent = "Skor: " + score;
+    }
+
+    function checkAnswer(selected) {
+      const correct = questions[current].answer;
+
+      if (selected === correct) {
+        correctSound.play();
+        document.getElementById("result").textContent = texts[language].correct;
+        score++;
+      } else {
+        wrongSound.play();
+        document.getElementById("result").textContent = texts[language].wrong + correct;
+      }
+
+      document.getElementById("score").textContent = "Skor: " + score;
+    }
+
+    function nextQuestion() {
+      current++;
+      if (current >= questions.length) {
+        endGame(texts[language].finish);
+        return;
+      }
+      loadQuestion();
+    }
+
+    function endGame(msg) {
+      clearInterval(timerInterval);
+      document.getElementById("quizBox").innerHTML =
+        `<h1>${msg}</h1><p>Skor akhir: ${score} / ${questions.length}</p>
+         <button class='menu-btn' onclick='location.reload()'>🏠 Back Home</button>`;
+    }
+
+    function openSettings() {
+      document.getElementById("mainMenu").classList.add("hidden");
+      document.getElementById("settingsMenu").classList.remove("hidden");
+    }
+
+    function backToMenu() {
+      document.getElementById("settingsMenu").classList.add("hidden");
+      document.getElementById("mainMenu").classList.remove("hidden");
+    }
+
+    function backHome() { location.reload(); }
+
+    function setVolume(val) { music.volume = val; }
+
+    function setLanguage(lang) { language = lang; alert("Language changed!"); }
+  </script>
+
+</body>
+</html>
